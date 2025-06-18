@@ -61,6 +61,11 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 		return returnType != null ? returnValues : null;
 	}
 
+	@Override
+	public T @Nullable [] execute(FunctionEvent<?> event, FunctionArguments arguments) {
+		return null;
+	}
+
 	/**
 	 * @deprecated Use {@link ScriptFunction#returnValues(Event, Expression)} instead.
 	 */
