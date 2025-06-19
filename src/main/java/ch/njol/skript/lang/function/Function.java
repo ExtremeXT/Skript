@@ -55,8 +55,6 @@ public abstract class Function<T> {
 		return sign.getReturnType();
 	}
 
-	// FIXME what happens with a delay in a function?
-
 	/**
 	 * Executes this function with given parameter.
 	 *
@@ -66,12 +64,12 @@ public abstract class Function<T> {
 	 * @return The result(s) of this function
 	 */
 	public final T @Nullable [] execute(Object[][] params) {
-		FunctionEvent<? extends T> e = new FunctionEvent<>(this);
+		FunctionEvent<? extends T> event = new FunctionEvent<>(this);
 
 		// Call function event only if requested by addon
 		// Functions may be called VERY often, so this might have performance impact
 		if (Functions.callFunctionEvents)
-			Bukkit.getPluginManager().callEvent(e);
+			Bukkit.getPluginManager().callEvent(event);
 
 		// Parameters taken by the function.
 		Parameter<?>[] parameters = sign.getParameters();
@@ -91,7 +89,7 @@ public abstract class Function<T> {
 			Object[] val = ps[i];
 			if (val == null) { // Go for default value
 				assert p.def != null; // Should've been parse error
-				val = p.def.getArray(e);
+				val = p.def.getArray(event);
 			}
 
 			/*
@@ -105,8 +103,10 @@ public abstract class Function<T> {
 			ps[i] = val;
 		}
 
+		execute(event, args);
+
 		// Execute function contents
-		T[] r = execute(e, ps);
+		T[] r = execute(event, ps);
 		// Assert that return value type makes sense
 		assert sign.getReturnType() == null ? r == null : r == null
 			|| (r.length <= 1 || !sign.isSingle()) && !CollectionUtils.contains(r, null)
@@ -135,7 +135,7 @@ public abstract class Function<T> {
 	 *                  you need to manually handle default values.
 	 * @return Function return value(s).
 	 */
-	public abstract T @Nullable [] execute(FunctionEvent<?> event, FunctionArguments arguments);
+	public abstract T execute(FunctionEvent<?> event, FunctionArguments arguments);
 
 	/**
 	 * Resets the return value of the {@code Function}.

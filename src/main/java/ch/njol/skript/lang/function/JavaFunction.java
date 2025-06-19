@@ -25,7 +25,7 @@ public abstract class JavaFunction<T> extends Function<T> {
 	public abstract T @Nullable [] execute(FunctionEvent<?> event, Object[][] params);
 
 	@Override
-	public T @Nullable [] execute(FunctionEvent<?> event, FunctionArguments arguments) {
+	public T execute(FunctionEvent<?> event, FunctionArguments arguments) {
 		Object[][] args = new Object[arguments.getNames().size()][];
 
 		int i = 0;
@@ -33,7 +33,18 @@ public abstract class JavaFunction<T> extends Function<T> {
 			args[i] = arguments.get(name);
 			i++;
 		}
-		return execute(event, args);
+
+		T[] result = execute(event, args);
+
+		if (result == null) {
+			return null;
+		}
+
+		if (isSingle()) {
+			return result[0];
+		} else {
+			return (T) result;
+		}
 	}
 
 	private String @Nullable [] description = null;

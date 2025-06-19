@@ -1,13 +1,14 @@
 package ch.njol.skript.lang.function;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class FunctionArguments {
+public final class FunctionArguments {
 
 	private final Map<String, Object> arguments;
 
-	public FunctionArguments(Map<String, Object> arguments) {
+	public FunctionArguments(LinkedHashMap<String, Object> arguments) {
 		this.arguments = arguments;
 	}
 

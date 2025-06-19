@@ -12,12 +12,7 @@ import ch.njol.util.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.lang.script.Script;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Static methods to work with functions.
@@ -66,6 +61,26 @@ public abstract class Functions {
 		String name = function.getName();
 		if (!name.matches(functionNamePattern))
 			throw new SkriptAPIException("Invalid function name '" + name + "'");
+		javaNamespace.addSignature(function.getSignature());
+		javaNamespace.addFunction(function);
+		globalFunctions.put(function.getName(), javaNamespace);
+
+		return function;
+	}
+
+	/**
+	 * Registers a {@link DefaultFunction}.
+	 *
+	 * @param function The function to register.
+	 * @return The registered function.
+	 */
+	public static DefaultFunction<?> register(DefaultFunction<?> function) {
+		Skript.checkAcceptRegistrations();
+
+		String name = function.getName();
+		if (!name.matches(functionNamePattern))
+			throw new SkriptAPIException("Invalid function name '%s'".formatted(name));
+
 		javaNamespace.addSignature(function.getSignature());
 		javaNamespace.addFunction(function);
 		globalFunctions.put(function.getName(), javaNamespace);
@@ -265,7 +280,7 @@ public abstract class Functions {
 
 	/**
 	 * Gets a signature of function with given name.
-	 * 
+	 *
 	 * @deprecated in favour of {@link #getGlobalSignature(String)} for proper name.
 	 * @param name Name of function.
 	 * @return Signature, or null if function does not exist.
@@ -277,7 +292,7 @@ public abstract class Functions {
 
 	/**
 	 * Gets a signature of function with given name.
-	 * 
+	 *
 	 * @param name Name of function.
 	 * @return Signature, or null if function does not exist.
 	 */
@@ -290,7 +305,7 @@ public abstract class Functions {
 
 	/**
 	 * Gets a signature of function with given name.
-	 * 
+	 *
 	 * @param name Name of function.
 	 * @param script The script where the function is declared in. Used to get local functions.
 	 * @return Signature, or null if function does not exist.

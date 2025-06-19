@@ -9,82 +9,96 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class DefaultFunction<T> extends JavaFunction<T> {
+public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Function<T> {
 
-    private final Function<FunctionArguments, T> execute;
+	public static <T> Builder<T> builder(String name, Class<T> returnType) {
+		return new Builder<>(name, returnType);
+	}
 
-    static {
-        DefaultFunction<Double> build = builder("product", Double.class)
-                .parameter("xs", Number[].class)
-                .parameter("start", Number.class)
-                .build(args -> {
-                    Number[] xs = args.get("xs");
+	private String[] description;
+	private String[] since;
+	private String[] examples;
 
-                    double product = args.getOrDefault("start", 1.0);
-                    for (Number x : xs) {
-                        product *= x.doubleValue();
-                    }
+	private final Function<FunctionArguments, T> execute;
 
-                    return product;
-                });
-    }
+	public DefaultFunction(
+		String name, Parameter<?>[] parameters,
+		ClassInfo<T> returnType, boolean single,
+		@Nullable Contract contract, Function<FunctionArguments, T> execute
+	) {
+		super(new Signature<>("none", name, parameters, false,
+			returnType, single, Thread.currentThread().getStackTrace()[3].getClassName(), contract));
 
-    private DefaultFunction(
-            String name, Parameter<?>[] parameters,
-            ClassInfo<T> returnType, boolean single,
-            @Nullable Contract contract, Function<FunctionArguments, T> execute
-    ) {
-        super(name, parameters, returnType, single, contract);
+		this.execute = execute;
+	}
 
-        this.execute = execute;
-    }
+	@Override
+	public T @Nullable [] execute(FunctionEvent<?> event, Object[][] params) {
+		throw new IllegalStateException("DefaultFunction should not call execute(FunctionEvent, Object[][])");
+	}
 
-    public static <T> Builder<T> builder(String name, Class<T> returnType) {
-        return new Builder<>(name, returnType);
-    }
+	@Override
+	public @Nullable T execute(FunctionEvent<?> event, FunctionArguments arguments) {
+		return execute.apply(arguments);
+	}
 
-    @Override
-    public T @Nullable [] execute(FunctionEvent<?> event, Object[][] params) {
-        throw new IllegalStateException("DefaultFunction should not call execute(FunctionEvent, Object[][])");
-    }
+	@Override
+	public boolean resetReturnValue() {
+		return true;
+	}
 
-    public static class Builder<T> {
+	public DefaultFunction<T> description(String... description) {
+		this.description = description;
+		return this;
+	}
 
-        private final String name;
-        private final Class<T> returnType;
-        private final Map<String, Parameter<?>> parameters = new LinkedHashMap<>();
+	public DefaultFunction<T> since(String... since) {
+		this.since = since;
+		return this;
+	}
 
-        private Contract contract = null;
+	public DefaultFunction<T> examples(String... examples) {
+		this.examples = examples;
+		return this;
+	}
 
-        public Builder(String name, Class<T> returnType) {
-            this.name = name;
-            this.returnType = returnType;
-        }
+	public static class Builder<T> {
 
-        public Builder<T> contract(Contract contract) {
-            this.contract = contract;
-            return this;
-        }
+		private final String name;
+		private final Class<T> returnType;
+		private final Map<String, Parameter<?>> parameters = new LinkedHashMap<>();
 
-        public <PT> Builder<T> parameter(String name, Class<PT> type) {
-            ClassInfo<PT> classInfo = Classes.getExactClassInfo(type);
-            if (classInfo == null) {
-                throw new IllegalArgumentException("No ClassInfo found for " + type.getSimpleName());
-            }
-            parameters.put(name, new Parameter<>(name, classInfo, true, null));
-            return this;
-        }
+		private Contract contract = null;
 
-        public DefaultFunction<T> build(Function<FunctionArguments, T> execute) {
-            ClassInfo<T> classInfo = Classes.getExactClassInfo(returnType);
+		public Builder(String name, Class<T> returnType) {
+			this.name = name;
+			this.returnType = returnType;
+		}
 
-            if (classInfo == null) {
-                throw new IllegalArgumentException("No ClassInfo found for " + returnType.getSimpleName());
-            }
+		public Builder<T> contract(Contract contract) {
+			this.contract = contract;
+			return this;
+		}
 
-            return new DefaultFunction<>(name, parameters.values().toArray(new Parameter[0]), classInfo,
-                    returnType.isArray(), contract, execute);
-        }
-    }
+		public <PT> Builder<T> parameter(String name, Class<PT> type) {
+			ClassInfo<PT> classInfo = Classes.getExactClassInfo(type);
+			if (classInfo == null) {
+				throw new IllegalArgumentException("No ClassInfo found for " + type.getSimpleName());
+			}
+			parameters.put(name, new Parameter<>(name, classInfo, true, null));
+			return this;
+		}
+
+		public DefaultFunction<T> build(Function<FunctionArguments, T> execute) {
+			ClassInfo<T> classInfo = Classes.getExactClassInfo(returnType);
+
+			if (classInfo == null) {
+				throw new IllegalArgumentException("No ClassInfo found for " + returnType.getSimpleName());
+			}
+
+			return new DefaultFunction<>(name, parameters.values().toArray(new Parameter[0]), classInfo,
+				!returnType.isArray(), contract, execute);
+		}
+	}
 
 }

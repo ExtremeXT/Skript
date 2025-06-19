@@ -8,9 +8,7 @@ import ch.njol.skript.lang.Trigger;
 import ch.njol.skript.lang.util.SimpleEvent;
 import ch.njol.skript.variables.Variables;
 import org.bukkit.event.Event;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.skriptlang.skript.lang.script.Script;
 
 public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 
@@ -19,14 +17,6 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	private boolean returnValueSet;
 	private T @Nullable [] returnValues;
 
-	/**
-	 * @deprecated use {@link ScriptFunction#ScriptFunction(Signature, SectionNode)} instead.
-	 */
-	@Deprecated(since = "2.9.0", forRemoval = true)
-	public ScriptFunction(Signature<T> sign, Script script, SectionNode node) {
-		this(sign, node);
-	}
-	
 	public ScriptFunction(Signature<T> sign, SectionNode node) {
 		super(sign);
 
@@ -62,19 +52,24 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	}
 
 	@Override
-	public T @Nullable [] execute(FunctionEvent<?> event, FunctionArguments arguments) {
-		return null;
-	}
+	public T execute(FunctionEvent<?> event, FunctionArguments arguments) {
+		for (String name : arguments.getNames()) {
+			Variables.setVariable(name, arguments.get(name), event, true);
+		}
 
-	/**
-	 * @deprecated Use {@link ScriptFunction#returnValues(Event, Expression)} instead.
-	 */
-	@Deprecated(since = "2.9.0", forRemoval = true)
-	@ApiStatus.Internal
-	public final void setReturnValue(@Nullable T[] values) {
-		assert !returnValueSet;
-		returnValueSet = true;
-		this.returnValues = values;
+		trigger.execute(event);
+		ClassInfo<T> returnType = getReturnType();
+
+		if (returnType == null || returnValues == null) {
+			return null;
+		}
+
+		if (returnType.getC().isArray()) {
+			//noinspection unchecked
+			return (T) returnValues;
+		} else {
+			return returnValues[0];
+		}
 	}
 
 	@Override
