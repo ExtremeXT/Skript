@@ -1,0 +1,19 @@
+function named_arguments(x: int, y: int):: int:
+	return {_x} - {_y}
+
+test "named function arguments":
+	set {_r} to named_arguments(1, 2)
+
+	assert {_r} = -1 with "did not select correct arguments"
+
+	set {_r} to named_arguments(2, 1)
+
+	assert {_r} = 1 with "did not select correct arguments"
+
+	set {_r} to named_arguments(x: 1, y: 2)
+
+	assert {_r} = -1 with "did not select correct arguments"
+
+	set {_r} to named_arguments(y: 2, x: 1)
+
+	assert {_r} = -1 with "did not select correct arguments"
