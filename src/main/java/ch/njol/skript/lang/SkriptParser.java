@@ -10,8 +10,8 @@ import ch.njol.skript.command.Commands;
 import ch.njol.skript.command.ScriptCommand;
 import ch.njol.skript.command.ScriptCommandEvent;
 import ch.njol.skript.expressions.ExprParse;
+import ch.njol.skript.lang.FunctionReferenceArgumentParser.Type;
 import ch.njol.skript.lang.function.ExprFunctionCall;
-import ch.njol.skript.lang.function.FunctionReference;
 import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.lang.parser.ParseStackOverflowException;
 import ch.njol.skript.lang.parser.ParserInstance;
@@ -40,14 +40,13 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.lang.experiment.ExperimentalSyntax;
+import org.skriptlang.skript.lang.function.FunctionReference;
 import org.skriptlang.skript.lang.script.Script;
 import org.skriptlang.skript.lang.script.ScriptWarning;
 
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1023,7 +1022,7 @@ public class SkriptParser {
 		}
 	}
 
-	private final static Pattern FUNCTION_CALL_PATTERN = Pattern.compile("(" + Functions.functionNamePattern + ")\\((.*)\\)");
+	private final static Pattern FUNCTION_CALL_PATTERN = Pattern.compile("(%s)\\((.*)\\)".formatted(Functions.functionNamePattern));
 
 	/**
 	 * @param types The required return type or null if it is not used (e.g. when calling a void function)
@@ -1033,7 +1032,7 @@ public class SkriptParser {
 	public <T> @Nullable FunctionReference<T> parseFunction(@Nullable Class<? extends T>... types) {
 		if (context != ParseContext.DEFAULT && context != ParseContext.EVENT)
 			return null;
-		AtomicBoolean unaryArgument = new AtomicBoolean(false);
+
 		try (ParseLogHandler log = SkriptLogger.startParseLogHandler()) {
 			Matcher matcher = FUNCTION_CALL_PATTERN.matcher(expr);
 			if (!matcher.matches()) {
@@ -1041,9 +1040,8 @@ public class SkriptParser {
 				return null;
 			}
 
-			String functionName = "" + matcher.group(1);
+			String functionName = matcher.group(1);
 			String args = matcher.group(2);
-			Expression<?>[] params;
 
 			// Check for incorrect quotes, e.g. "myFunction() + otherFunction()" being parsed as one function
 			// See https://github.com/SkriptLang/Skript/issues/1532
@@ -1059,60 +1057,30 @@ public class SkriptParser {
 				log.printError();
 				return null;
 			}
-			final SkriptParser skriptParser = new SkriptParser(args, flags | PARSE_LITERALS, context);
-			params = this.getFunctionArguments(() -> skriptParser.suppressMissingAndOrWarnings().parseExpression(Object.class), args, unaryArgument);
-			if (params == null) {
-				log.printError();
-				return null;
-			}
 
-			ParserInstance parser = getParser();
-			Script currentScript = parser.isActive() ? parser.getCurrentScript() : null;
-			FunctionReference<T> functionReference = new FunctionReference<>(functionName, SkriptLogger.getNode(),
-					currentScript != null ? currentScript.getConfig().getFileName() : null, types, params);//.toArray(new Expression[params.size()]));
-			attempt_list_parse:
-			if (unaryArgument.get() && !functionReference.validateParameterArity(true)) {
-				try (ParseLogHandler ignored = SkriptLogger.startParseLogHandler()) {
-					SkriptParser alternative = new SkriptParser(args, flags | PARSE_LITERALS, context);
-					params = this.getFunctionArguments(() -> alternative.suppressMissingAndOrWarnings()
-								.parseExpressionList(ignored, Object.class), args, unaryArgument);
-					ignored.clear();
-					if (params == null)
-						break attempt_list_parse;
-				}
-				functionReference = new FunctionReference<>(functionName, SkriptLogger.getNode(),
-						currentScript != null ? currentScript.getConfig().getFileName() : null, types, params);
-			}
-			if (!functionReference.validateFunction(true)) {
-				log.printError();
-				return null;
-			}
-			log.printLog();
-			return functionReference;
-		}
-	}
+			FunctionReferenceArgumentParser.Argument[] arguments = new FunctionReferenceArgumentParser(args).getArguments();
+			FunctionReference.Argument[] parsed = new FunctionReference.Argument[arguments.length];
 
-	private Expression<?> @Nullable [] getFunctionArguments(Supplier<Expression<?>> parsing, String args, AtomicBoolean unary) {
-		Expression<?>[] params;
-		if (args.length() != 0) {
-			Expression<?> parsedExpression = parsing.get();
-			if (parsedExpression == null)
-				return null;
-			if (parsedExpression instanceof ExpressionList) {
-				if (!parsedExpression.getAnd()) {
+			for (int i = 0; i < arguments.length; i++) {
+				FunctionReferenceArgumentParser.Argument argument = arguments[i];
+
+				SkriptParser parser = new SkriptParser(argument.value(), flags | SkriptParser.PARSE_LITERALS, context);
+
+				Expression<?> expression = parser.parseExpression(Object.class);
+
+				if (expression instanceof ExpressionList<?> list && !list.getAnd()) {
 					Skript.error("Function arguments must be separated by commas and optionally an 'and', but not an 'or'."
-									 + " Put the 'or' into a second set of parentheses if you want to make it a single parameter, e.g. 'give(player, (sword or axe))'");
+						+ " Put the 'or' into a second set of parentheses if you want to make it a single parameter, e.g. 'give(player, (sword or axe))'");
 					return null;
 				}
-				params = ((ExpressionList<?>) parsedExpression).getExpressions();
-			} else {
-				unary.set(true);
-				params = new Expression[] {parsedExpression};
+
+				parsed[i] = new FunctionReference.Argument(argument.type() == Type.UNNAMED ? FunctionReference.Type.UNNAMED : FunctionReference.Type.NAMED,
+					argument.name(), expression);
 			}
-		} else {
-			params = new Expression[0];
+
+			String namespace = getParser().getCurrentScript().getConfig().getFileName();
+			return new FunctionReference<>(namespace, functionName, parsed);
 		}
-		return params;
 	}
 
 	/**
@@ -1561,7 +1529,7 @@ public class SkriptParser {
 
 	/**
 	 * @deprecated due to bad naming conventions,
-	 * use {@link #LIST_SPLIT_PATTERN} instead. 
+	 * use {@link #LIST_SPLIT_PATTERN} instead.
 	 */
 	@Deprecated(since = "2.7.0", forRemoval = true)
 	public final static Pattern listSplitPattern = LIST_SPLIT_PATTERN;

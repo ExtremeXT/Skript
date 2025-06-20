@@ -178,7 +178,12 @@ public final class Parameter<T> {
 	public boolean isSingleValue() {
 		return single;
 	}
-	
+
+	@Override
+	public int hashCode() {
+		return name.hashCode();
+	}
+
 	@Override
 	public String toString() {
 		return toString(Skript.debug());
