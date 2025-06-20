@@ -34,7 +34,7 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 
 	@Override
 	protected T @Nullable [] get(Event event) {
-		Object returnValue = function.execute();
+		Object returnValue = function.execute(event);
 		function.function().resetReturnValue();
 		return Converters.convert(new Object[] { returnValue }, returnTypes, returnType);
 	}

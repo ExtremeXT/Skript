@@ -1080,7 +1080,15 @@ public class SkriptParser {
 			}
 
 			String namespace = getParser().getCurrentScript().getConfig().getFileName();
-			return new FunctionReference<>(namespace, functionName, parsed);
+
+			FunctionReference<T> reference = new FunctionReference<>(namespace, functionName, parsed);
+
+			if (!reference.validate()) {
+				log.printError();
+				return null;
+			}
+
+			return reference;
 		}
 	}
 

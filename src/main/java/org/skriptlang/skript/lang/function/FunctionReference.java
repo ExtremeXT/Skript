@@ -3,6 +3,8 @@ package org.skriptlang.skript.lang.function;
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.function.*;
+import ch.njol.skript.util.LiteralUtils;
+import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
@@ -14,7 +16,7 @@ public final class FunctionReference<T> {
 	private final Argument<Expression<?>>[] arguments;
 
 	private Function<? extends T> cachedFunction;
-	private FunctionArguments cachedArguments;
+	private LinkedHashMap<String, Expression<?>> cachedArguments;
 
 	public FunctionReference(String namespace, String name, Argument<Expression<?>>[] arguments) {
 		this.namespace = namespace;
@@ -22,42 +24,68 @@ public final class FunctionReference<T> {
 		this.arguments = arguments;
 	}
 
-	public T execute() {
+	public boolean validate() {
 		if (cachedFunction == null) {
 			//noinspection unchecked
 			cachedFunction = (Function<? extends T>) Functions.getFunction(name, namespace);
-		}
 
-		if (cachedFunction == null) {
-			Skript.error("Function '%s' not found.".formatted(name));
-			return null;
+			if (cachedFunction == null) {
+				Skript.error("Function '%s' not found.".formatted(name));
+				return false;
+			}
 		}
 
 		if (cachedArguments == null) {
-			LinkedHashMap<String, Object> args = new LinkedHashMap<>();
+			cachedArguments = new LinkedHashMap<>();
 
-			LinkedHashMap<String, Parameter<?>> parameters = new LinkedHashMap<>();
+			// get the target params of the function
+			LinkedHashMap<String, Parameter<?>> targetParameters = new LinkedHashMap<>();
 			for (Parameter<?> parameter : cachedFunction.getParameters()) {
-				parameters.put(parameter.getName(), parameter);
+				targetParameters.put(parameter.getName(), parameter);
 			}
 
 			for (Argument<Expression<?>> argument : arguments) {
+				Parameter<?> target;
 				if (argument.type == Type.NAMED) {
-					args.put(argument.name, argument.value);
-					parameters.remove(argument.name);
+					target = targetParameters.get(argument.name);
 				} else {
-					// get the first available parameter
-					Parameter<?> parameter = parameters.firstEntry().getValue();
-
-					args.put(parameter.getName(), argument.value);
-					parameters.remove(parameter.getName());
+					target = targetParameters.firstEntry().getValue();
 				}
-			}
 
-			cachedArguments = new FunctionArguments(args);
+				// try to parse value in the argument
+				//noinspection unchecked
+				Expression<?> converted = argument.value.getConvertedExpression(target.getType().getC());
+
+				// failed to parse value
+				if (converted == null) {
+					if (LiteralUtils.hasUnparsedLiteral(argument.value)) {
+						Skript.error("Can't understand this expression: %s".formatted(argument.value));
+					} else {
+						Skript.error("Type mismatch for argument '%s' in function '%s'. Expected: %s, got %s."
+							.formatted(target.getName(), name, argument.value.getReturnType(), target.getType()));
+					}
+					return false;
+				}
+
+				// all good
+				cachedArguments.put(target.getName(), converted);
+				targetParameters.remove(target.getName());
+			}
 		}
 
-		return cachedFunction.execute(new FunctionEvent<>(cachedFunction), cachedArguments);
+		return true;
+	}
+
+	public T execute(Event event) {
+		if (!validate()) {
+			Skript.error("Epic function fail");
+			return null;
+		}
+
+		LinkedHashMap<String, Object> args = new LinkedHashMap<>();
+		cachedArguments.forEach((k, v) -> args.put(k, v.getSingle(event)));
+
+		return cachedFunction.execute(new FunctionEvent<>(cachedFunction), new FunctionArguments(args));
 	}
 
 	public Function<? extends T> function() {

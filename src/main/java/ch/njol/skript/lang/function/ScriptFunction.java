@@ -67,6 +67,9 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 		}
 
 		if (isSingle()) {
+			if (returnValues.length == 0) {
+				return null;
+			}
 			return returnValues[0];
 		} else {
 			//noinspection unchecked
