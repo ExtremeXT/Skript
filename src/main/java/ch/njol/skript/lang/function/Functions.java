@@ -52,10 +52,9 @@ public abstract class Functions {
 	static boolean callFunctionEvents = false;
 
 	/**
-	 * Registers a function written in Java.
-	 *
-	 * @return The passed function
+	 * @deprecated Use {@link #register(DefaultFunction)}.
 	 */
+	@Deprecated(forRemoval = true, since = "INSERT VERSION")
 	public static JavaFunction<?> registerFunction(JavaFunction<?> function) {
 		Skript.checkAcceptRegistrations();
 		String name = function.getName();
@@ -406,10 +405,22 @@ public abstract class Functions {
 		toValidate.clear();
 	}
 
+	/**
+	 * @deprecated Use {@link #getFunctions()}.
+	 */
 	@SuppressWarnings({"unchecked"})
+	@Deprecated(forRemoval = true, since = "INSERT VERSION")
 	public static Collection<JavaFunction<?>> getJavaFunctions() {
 		// We know there are only Java functions in that namespace
 		return (Collection<JavaFunction<?>>) (Object) javaNamespace.getFunctions();
+	}
+
+	/**
+	 * Returns all functions.
+	 * @return All functions.
+	 */
+	public static Collection<Function<?>> getFunctions() {
+		return javaNamespace.getFunctions();
 	}
 
 	/**

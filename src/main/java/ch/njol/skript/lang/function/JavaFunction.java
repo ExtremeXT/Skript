@@ -6,8 +6,9 @@ import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * @author Peter Güttinger
+ * @deprecated Use {@link DefaultFunction}.
  */
+@Deprecated(forRemoval = true, since = "INSERT VERSION")
 public abstract class JavaFunction<T> extends Function<T> {
 	
 	public JavaFunction(Signature<T> sign) {
@@ -48,6 +49,9 @@ public abstract class JavaFunction<T> extends Function<T> {
 		}
 
 		if (isSingle()) {
+			if (result.length == 0) {
+				return null;
+			}
 			return result[0];
 		} else {
 			//noinspection unchecked

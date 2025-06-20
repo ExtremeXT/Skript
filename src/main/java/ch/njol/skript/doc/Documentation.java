@@ -6,6 +6,7 @@ import ch.njol.skript.conditions.CondCompare;
 import ch.njol.skript.lang.ExpressionInfo;
 import ch.njol.skript.lang.SkriptEventInfo;
 import ch.njol.skript.lang.SyntaxElementInfo;
+import ch.njol.skript.lang.function.DefaultFunction;
 import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.lang.function.JavaFunction;
 import ch.njol.skript.lang.function.Parameter;
@@ -157,7 +158,7 @@ public class Documentation {
 				"examples VARCHAR(2000) NOT NULL," +
 				"since VARCHAR(100) NOT NULL" +
 				");");
-		for (final JavaFunction<?> func : Functions.getJavaFunctions()) {
+		for (ch.njol.skript.lang.function.Function<?> func : Functions.getFunctions()) {
 			assert func != null;
 			insertFunction(pw, func);
 		}
@@ -381,15 +382,30 @@ public class Documentation {
 				since);
 	}
 
-	private static void insertFunction(final PrintWriter pw, final JavaFunction<?> func) {
+	private static void insertFunction(final PrintWriter pw, final ch.njol.skript.lang.function.Function<?> func) {
 		final StringBuilder params = new StringBuilder();
 		for (final Parameter<?> p : func.getParameters()) {
 			if (params.length() != 0)
 				params.append(", ");
 			params.append(p.toString());
 		}
-		final String desc = validateHTML(StringUtils.join(func.getDescription(), "<br/>"), "functions");
-		final String since = validateHTML(func.getSince(), "functions");
+
+		String[] description, s, examples;
+		if (func instanceof DefaultFunction<?> defaultFunction) {
+			description = defaultFunction.description();
+			s = defaultFunction.since();
+			examples = defaultFunction.examples();
+		} else if (func instanceof JavaFunction<?> javaFunction) {
+			description = javaFunction.getDescription();
+			s = new String[] { javaFunction.getSince() };
+			examples = javaFunction.getExamples();
+		} else {
+			assert false;
+			return;
+		}
+
+		final String desc = validateHTML(StringUtils.join(description, "<br/>"), "functions");
+		final String since = validateHTML(StringUtils.join(s, "<br/>"), "functions");
 		if (desc == null || since == null) {
 			Skript.warning("Function " + func.getName() + "'s description or 'since' is invalid");
 			return;
@@ -398,7 +414,7 @@ public class Documentation {
 				escapeHTML(func.getName()),
 				escapeHTML(params.toString()),
 				desc,
-				escapeHTML(StringUtils.join(func.getExamples(), "\n")),
+				escapeHTML(StringUtils.join(examples, "\n")),
 				since);
 	}
 

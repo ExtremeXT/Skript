@@ -5,10 +5,9 @@ import ch.njol.skript.util.Contract;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A {@link JavaFunction} which doesn't make use of
- * the {@link FunctionEvent} instance and that cannot
- * accept empty / {@code null} parameters.
+ * @deprecated Use {@link DefaultFunction}.
  */
+@Deprecated(forRemoval = true, since = "INSERT VERSION")
 public abstract class SimpleJavaFunction<T> extends JavaFunction<T> {
 	
 	public SimpleJavaFunction(Signature<T> sign) {
