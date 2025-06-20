@@ -1,6 +1,7 @@
 package ch.njol.skript.lang;
 
-import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.lang.function.FunctionReference.Argument;
+import org.skriptlang.skript.lang.function.FunctionReference.Type;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +19,7 @@ final class FunctionReferenceArgumentParser {
 	/**
 	 * The list of unmapped arguments.
 	 */
-	private final List<Argument> arguments = new ArrayList<>();
+	private final List<Argument<String>> arguments = new ArrayList<>();
 
 	/**
 	 * The char index.
@@ -129,9 +130,9 @@ final class FunctionReferenceArgumentParser {
 
 	private void save(Type type) {
 		if (type == Type.UNNAMED) {
-			arguments.add(new Argument(Type.UNNAMED, null, exprPart.toString().trim()));
+			arguments.add(new Argument<>(Type.UNNAMED, null, exprPart.toString().trim()));
 		} else {
-			arguments.add(new Argument(Type.NAMED, namePart.toString().trim(), exprPart.toString().trim()));
+			arguments.add(new Argument<>(Type.NAMED, namePart.toString().trim(), exprPart.toString().trim()));
 		}
 
 		namePart.setLength(0);
@@ -150,36 +151,9 @@ final class FunctionReferenceArgumentParser {
 	 *
 	 * @return All arguments.
 	 */
-	public Argument[] getArguments() {
-		return arguments.toArray(new Argument[0]);
-	}
-
-	/**
-	 * An argument.
-	 *
-	 * @param type  The type of the argument.
-	 * @param name  The name of the argument, possibly null.
-	 * @param value The value of the argument.
-	 */
-	public record Argument(
-		Type type,
-		@Nullable String name,
-		String value
-	) { }
-
-	/**
-	 * The type of argument.
-	 */
-	public enum Type {
-		/**
-		 * Whether this argument has a name.
-		 */
-		NAMED,
-
-		/**
-		 * Whether this argument does not have a name.
-		 */
-		UNNAMED
+	public Argument<String>[] getArguments() {
+		//noinspection unchecked
+		return (Argument<String>[]) arguments.toArray(new Argument[0]);
 	}
 
 }

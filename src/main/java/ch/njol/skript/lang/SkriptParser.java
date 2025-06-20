@@ -10,7 +10,6 @@ import ch.njol.skript.command.Commands;
 import ch.njol.skript.command.ScriptCommand;
 import ch.njol.skript.command.ScriptCommandEvent;
 import ch.njol.skript.expressions.ExprParse;
-import ch.njol.skript.lang.FunctionReferenceArgumentParser.Type;
 import ch.njol.skript.lang.function.ExprFunctionCall;
 import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.lang.parser.ParseStackOverflowException;
@@ -395,11 +394,11 @@ public class SkriptParser {
 					log.printError();
 					return null;
 				}
-				FunctionReference<T> functionReference = parseFunction(types);
+				FunctionReference<T> functionReference = parseFunction();
 				if (functionReference != null) {
 					log.printLog();
 					//noinspection rawtypes
-					return new ExprFunctionCall(functionReference);
+					return new ExprFunctionCall(functionReference, types);
 				} else if (log.hasError()) {
 					log.printError();
 					return null;
@@ -570,10 +569,10 @@ public class SkriptParser {
 				}
 
 				// If it wasn't variable, do same for function call
-				FunctionReference<?> functionReference = parseFunction(types);
+				FunctionReference<?> functionReference = parseFunction();
 				if (functionReference != null) {
 
-					if (onlySingular && !functionReference.isSingle()) {
+					if (onlySingular && !functionReference.function().isSingle()) {
 						Skript.error("'" + expr + "' can only be a single "
 							+ Classes.toString(Stream.of(exprInfo.classes).map(classInfo -> classInfo.getName().toString()).toArray(), false)
 							+ ", not more.");
@@ -582,7 +581,7 @@ public class SkriptParser {
 					}
 
 					log.printLog();
-					return new ExprFunctionCall<>(functionReference);
+					return new ExprFunctionCall<>(functionReference, types);
 				} else if (log.hasError()) {
 					log.printError();
 					return null;
@@ -1025,11 +1024,11 @@ public class SkriptParser {
 	private final static Pattern FUNCTION_CALL_PATTERN = Pattern.compile("(%s)\\((.*)\\)".formatted(Functions.functionNamePattern));
 
 	/**
-	 * @param types The required return type or null if it is not used (e.g. when calling a void function)
-	 * @return The parsed function, or null if the given expression is not a function call or is an invalid function call (check for an error to differentiate these two)
+	 * @return The parsed function, or null if the given expression
+	 * is not a function call or is an invalid function call
+	 * (check for an error to differentiate these two).
 	 */
-	@SuppressWarnings("unchecked")
-	public <T> @Nullable FunctionReference<T> parseFunction(@Nullable Class<? extends T>... types) {
+	public <T> @Nullable FunctionReference<T> parseFunction() {
 		if (context != ParseContext.DEFAULT && context != ParseContext.EVENT)
 			return null;
 
@@ -1058,11 +1057,13 @@ public class SkriptParser {
 				return null;
 			}
 
-			FunctionReferenceArgumentParser.Argument[] arguments = new FunctionReferenceArgumentParser(args).getArguments();
-			FunctionReference.Argument[] parsed = new FunctionReference.Argument[arguments.length];
+			FunctionReference.Argument<String>[] arguments = new FunctionReferenceArgumentParser(args).getArguments();
+			//noinspection unchecked
+			FunctionReference.Argument<Expression<?>>[] parsed = (FunctionReference.Argument<Expression<?>>[])
+				new FunctionReference.Argument[arguments.length];
 
 			for (int i = 0; i < arguments.length; i++) {
-				FunctionReferenceArgumentParser.Argument argument = arguments[i];
+				FunctionReference.Argument<String> argument = arguments[i];
 
 				SkriptParser parser = new SkriptParser(argument.value(), flags | SkriptParser.PARSE_LITERALS, context);
 
@@ -1074,7 +1075,7 @@ public class SkriptParser {
 					return null;
 				}
 
-				parsed[i] = new FunctionReference.Argument(argument.type() == Type.UNNAMED ? FunctionReference.Type.UNNAMED : FunctionReference.Type.NAMED,
+				parsed[i] = new FunctionReference.Argument<>(argument.type() == FunctionReference.Type.UNNAMED ? FunctionReference.Type.UNNAMED : FunctionReference.Type.NAMED,
 					argument.name(), expression);
 			}
 

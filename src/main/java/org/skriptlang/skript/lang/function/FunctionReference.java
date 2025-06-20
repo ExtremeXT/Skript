@@ -11,12 +11,12 @@ public final class FunctionReference<T> {
 
 	private final String namespace;
 	private final String name;
-	private final Argument[] arguments;
+	private final Argument<Expression<?>>[] arguments;
 
-	private Function<T> cachedFunction;
+	private Function<? extends T> cachedFunction;
 	private FunctionArguments cachedArguments;
 
-	public FunctionReference(String namespace, String name, Argument[] arguments) {
+	public FunctionReference(String namespace, String name, Argument<Expression<?>>[] arguments) {
 		this.namespace = namespace;
 		this.name = name;
 		this.arguments = arguments;
@@ -25,7 +25,7 @@ public final class FunctionReference<T> {
 	public T execute() {
 		if (cachedFunction == null) {
 			//noinspection unchecked
-			cachedFunction = (Function<T>) Functions.getFunction(name, namespace);
+			cachedFunction = (Function<? extends T>) Functions.getFunction(name, namespace);
 		}
 
 		if (cachedFunction == null) {
@@ -41,7 +41,7 @@ public final class FunctionReference<T> {
 				parameters.put(parameter.getName(), parameter);
 			}
 
-			for (Argument argument : arguments) {
+			for (Argument<Expression<?>> argument : arguments) {
 				if (argument.type == Type.NAMED) {
 					args.put(argument.name, argument.value);
 					parameters.remove(argument.name);
@@ -60,6 +60,15 @@ public final class FunctionReference<T> {
 		return cachedFunction.execute(new FunctionEvent<>(cachedFunction), cachedArguments);
 	}
 
+	public Function<? extends T> function() {
+		if (cachedFunction == null) {
+			//noinspection unchecked
+			cachedFunction = (Function<? extends T>) Functions.getFunction(name, namespace);
+		}
+
+		return cachedFunction;
+	}
+
 	public String namespace() {
 		return namespace;
 	}
@@ -68,7 +77,7 @@ public final class FunctionReference<T> {
 		return name;
 	}
 
-	public Argument[] arguments() {
+	public Argument<Expression<?>>[] arguments() {
 		return arguments;
 	}
 
@@ -79,10 +88,10 @@ public final class FunctionReference<T> {
 	 * @param name  The name of the argument, possibly null.
 	 * @param value The value of the argument.
 	 */
-	public record Argument(
+	public record Argument<T>(
 		Type type,
 		@Nullable String name,
-		Expression<?> value
+		T value
 	) {
 
 	}

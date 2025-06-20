@@ -23,8 +23,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Reference to a Skript function.
+ * @deprecated Use {@link org.skriptlang.skript.lang.function.FunctionReference}
  */
+@Deprecated(forRemoval = true, since = "INSERT VERSION")
 public class FunctionReference<T> implements Contract, Executable<Event, T[]> {
 
 	/**
