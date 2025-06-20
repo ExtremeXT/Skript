@@ -5,6 +5,7 @@ import ch.njol.skript.classes.ClassInfo;
 import ch.njol.util.coll.CollectionUtils;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.util.event.Event;
 
 import java.util.Arrays;
 
@@ -103,8 +104,6 @@ public abstract class Function<T> {
 			ps[i] = val;
 		}
 
-		execute(event, args);
-
 		// Execute function contents
 		T[] r = execute(event, ps);
 		// Assert that return value type makes sense
@@ -119,7 +118,7 @@ public abstract class Function<T> {
 	}
 
 	/**
-	 * @deprecated Use {@link #execute(FunctionEvent, FunctionArguments)} instead.
+	 * @deprecated Use {@link #execute(Event, FunctionArguments)} instead.
 	 */
 	@Deprecated(forRemoval = true, since = "INSERT VERSION")
 	public abstract T @Nullable [] execute(FunctionEvent<?> event, Object[][] params);
@@ -135,7 +134,7 @@ public abstract class Function<T> {
 	 *                  you need to manually handle default values.
 	 * @return Function return value(s).
 	 */
-	public abstract T execute(FunctionEvent<?> event, FunctionArguments arguments);
+	public abstract T execute(Event event, FunctionArguments arguments);
 
 	/**
 	 * Resets the return value of the {@code Function}.

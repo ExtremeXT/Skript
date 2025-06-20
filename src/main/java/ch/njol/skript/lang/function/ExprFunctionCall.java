@@ -12,16 +12,16 @@ import org.skriptlang.skript.lang.converter.Converters;
 
 public class ExprFunctionCall<T> extends SimpleExpression<T> {
 
-	private final FunctionReference<?> function;
+	private final org.skriptlang.skript.lang.function.FunctionReference<?> function;
 	private final Class<? extends T>[] returnTypes;
 	private final Class<T> returnType;
 
-	public ExprFunctionCall(FunctionReference<T> function) {
+	public ExprFunctionCall(org.skriptlang.skript.lang.function.FunctionReference<T> function) {
 		this(function, function.returnTypes);
 	}
 
 	@SuppressWarnings("unchecked")
-	public ExprFunctionCall(FunctionReference<?> function, Class<? extends T>[] expectedReturnTypes) {
+	public ExprFunctionCall(org.skriptlang.skript.lang.function.FunctionReference<?> function, Class<? extends T>[] expectedReturnTypes) {
 		this.function = function;
 		Class<?> functionReturnType = function.getReturnType();
 		assert  functionReturnType != null;
@@ -38,7 +38,7 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 
 	@Override
 	protected T @Nullable [] get(Event event) {
-		Object[] returnValue = function.execute(event);
+		Object[] returnValue = function.execute();
 		function.resetReturnValue();
 		return Converters.convert(returnValue, returnTypes, returnType);
 	}

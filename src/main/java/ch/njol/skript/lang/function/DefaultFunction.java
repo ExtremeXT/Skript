@@ -4,6 +4,7 @@ import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.util.event.Event;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,7 +39,7 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 	}
 
 	@Override
-	public @Nullable T execute(FunctionEvent<?> event, FunctionArguments arguments) {
+	public @Nullable T execute(Event event, FunctionArguments arguments) {
 		return execute.apply(arguments);
 	}
 

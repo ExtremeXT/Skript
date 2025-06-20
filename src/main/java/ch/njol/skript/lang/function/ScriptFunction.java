@@ -7,8 +7,8 @@ import ch.njol.skript.lang.ReturnHandler;
 import ch.njol.skript.lang.Trigger;
 import ch.njol.skript.lang.util.SimpleEvent;
 import ch.njol.skript.variables.Variables;
-import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.util.event.Event;
 
 public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 
@@ -52,12 +52,14 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	}
 
 	@Override
-	public T execute(FunctionEvent<?> event, FunctionArguments arguments) {
+	public T execute(Event event, FunctionArguments arguments) {
+		FunctionEvent<T> e = new FunctionEvent<>(this);
+
 		for (String name : arguments.getNames()) {
-			Variables.setVariable(name, arguments.get(name), event, true);
+			Variables.setVariable(name, arguments.get(name), e, true);
 		}
 
-		trigger.execute(event);
+		trigger.execute(e);
 		ClassInfo<T> returnType = getReturnType();
 
 		if (returnType == null || returnValues == null) {
@@ -80,7 +82,7 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	}
 
 	@Override
-	public final void returnValues(Event event, Expression<? extends T> value) {
+	public final void returnValues(org.bukkit.event.Event event, Expression<? extends T> value) {
 		assert !returnValueSet;
 		returnValueSet = true;
 		this.returnValues = value.getArray(event);

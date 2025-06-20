@@ -3,6 +3,7 @@ package ch.njol.skript.lang.function;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.util.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.skriptlang.skript.util.event.Event;
 
 /**
  * @author Peter Güttinger
@@ -25,7 +26,7 @@ public abstract class JavaFunction<T> extends Function<T> {
 	public abstract T @Nullable [] execute(FunctionEvent<?> event, Object[][] params);
 
 	@Override
-	public T execute(FunctionEvent<?> event, FunctionArguments arguments) {
+	public T execute(Event event, FunctionArguments arguments) {
 		Object[][] args = new Object[arguments.getNames().size()][];
 
 		int i = 0;
@@ -34,7 +35,7 @@ public abstract class JavaFunction<T> extends Function<T> {
 			i++;
 		}
 
-		T[] result = execute(event, args);
+		T[] result = execute(new FunctionEvent<>(this), args);
 
 		if (result == null) {
 			return null;
