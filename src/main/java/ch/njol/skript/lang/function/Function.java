@@ -4,8 +4,8 @@ import ch.njol.skript.SkriptConfig;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.util.coll.CollectionUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
-import org.skriptlang.skript.util.event.Event;
 
 import java.util.Arrays;
 

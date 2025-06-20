@@ -3,8 +3,8 @@ package ch.njol.skript.lang.function;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.Contract;
+import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
-import org.skriptlang.skript.util.event.Event;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

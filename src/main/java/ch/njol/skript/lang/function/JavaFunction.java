@@ -2,8 +2,8 @@ package ch.njol.skript.lang.function;
 
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.util.Contract;
+import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
-import org.skriptlang.skript.util.event.Event;
 
 /**
  * @author Peter Güttinger
@@ -31,7 +31,13 @@ public abstract class JavaFunction<T> extends Function<T> {
 
 		int i = 0;
 		for (String name : arguments.getNames()) {
-			args[i] = arguments.get(name);
+			Object o = arguments.get(name);
+
+			if (o instanceof Object[] objects) {
+				args[i] = objects;
+			} else {
+				args[i] = new Object[] { o };
+			}
 			i++;
 		}
 
@@ -44,6 +50,7 @@ public abstract class JavaFunction<T> extends Function<T> {
 		if (isSingle()) {
 			return result[0];
 		} else {
+			//noinspection unchecked
 			return (T) result;
 		}
 	}

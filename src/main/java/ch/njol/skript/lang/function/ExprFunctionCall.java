@@ -16,14 +16,10 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 	private final Class<? extends T>[] returnTypes;
 	private final Class<T> returnType;
 
-	public ExprFunctionCall(org.skriptlang.skript.lang.function.FunctionReference<T> function) {
-		this(function, function.returnTypes);
-	}
-
 	@SuppressWarnings("unchecked")
 	public ExprFunctionCall(org.skriptlang.skript.lang.function.FunctionReference<?> function, Class<? extends T>[] expectedReturnTypes) {
 		this.function = function;
-		Class<?> functionReturnType = function.getReturnType();
+		Class<?> functionReturnType = function.function().getReturnType().getC();
 		assert  functionReturnType != null;
 		if (CollectionUtils.containsSuperclass(expectedReturnTypes, functionReturnType)) {
 			// Function returns expected type already
@@ -38,9 +34,9 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 
 	@Override
 	protected T @Nullable [] get(Event event) {
-		Object[] returnValue = function.execute();
-		function.resetReturnValue();
-		return Converters.convert(returnValue, returnTypes, returnType);
+		Object returnValue = function.execute();
+		function.function().resetReturnValue();
+		return Converters.convert(new Object[] { returnValue }, returnTypes, returnType);
 	}
 
 	@Override
@@ -48,8 +44,8 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 	public <R> @Nullable Expression<? extends R> getConvertedExpression(Class<R>... to) {
 		if (CollectionUtils.containsSuperclass(to, getReturnType()))
 			return (Expression<? extends R>) this;
-		assert function.getReturnType() != null;
-		if (Converters.converterExists(function.getReturnType(), to)) {
+		assert function.function().getReturnType() != null;
+		if (Converters.converterExists(function.function().getReturnType().getC(), to)) {
 			return new ExprFunctionCall<>(function, to);
 		}
 		return null;
@@ -57,7 +53,7 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 
 	@Override
 	public boolean isSingle() {
-		return function.isSingle();
+		return function.function().isSingle();
 	}
 
 	@Override
@@ -67,7 +63,7 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 
 	@Override
 	public String toString(@Nullable Event event, boolean debug) {
-		return function.toString(event, debug);
+		return function.toString();
 	}
 
 	@Override

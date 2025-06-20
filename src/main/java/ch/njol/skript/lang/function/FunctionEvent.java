@@ -3,7 +3,7 @@ package ch.njol.skript.lang.function;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
-public final class FunctionEvent<T> extends Event implements org.skriptlang.skript.util.event.Event {
+public final class FunctionEvent<T> extends Event {
 	
 	// Bukkit stuff
 	private final static HandlerList handlers = new HandlerList();

@@ -7,8 +7,8 @@ import ch.njol.skript.lang.ReturnHandler;
 import ch.njol.skript.lang.Trigger;
 import ch.njol.skript.lang.util.SimpleEvent;
 import ch.njol.skript.variables.Variables;
+import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
-import org.skriptlang.skript.util.event.Event;
 
 public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 
@@ -66,11 +66,11 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 			return null;
 		}
 
-		if (returnType.getC().isArray()) {
+		if (isSingle()) {
+			return returnValues[0];
+		} else {
 			//noinspection unchecked
 			return (T) returnValues;
-		} else {
-			return returnValues[0];
 		}
 	}
 
@@ -82,7 +82,7 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	}
 
 	@Override
-	public final void returnValues(org.bukkit.event.Event event, Expression<? extends T> value) {
+	public final void returnValues(Event event, Expression<? extends T> value) {
 		assert !returnValueSet;
 		returnValueSet = true;
 		this.returnValues = value.getArray(event);

@@ -22,7 +22,7 @@ public class EffFunctionCall extends Effect {
 	
 	@Nullable
 	public static EffFunctionCall parse(final String line) {
-		org.skriptlang.skript.lang.function.FunctionReference<?> function = new SkriptParser(line, SkriptParser.ALL_FLAGS, ParseContext.DEFAULT).parseFunction((Class<?>[]) null);
+		org.skriptlang.skript.lang.function.FunctionReference<?> function = new SkriptParser(line, SkriptParser.ALL_FLAGS, ParseContext.DEFAULT).parseFunction();
 		if (function != null)
 			return new EffFunctionCall(function);
 		return null;
@@ -31,12 +31,12 @@ public class EffFunctionCall extends Effect {
 	@Override
 	protected void execute(final Event event) {
 		function.execute();
-		function.resetReturnValue(); // Function might have return value that we're ignoring
+		function.function().resetReturnValue(); // Function might have return value that we're ignoring
 	}
 	
 	@Override
 	public String toString(@Nullable final Event event, final boolean debug) {
-		return function.toString(event, debug);
+		return function.function().toString();
 	}
 	
 	@Override
