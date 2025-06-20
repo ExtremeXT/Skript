@@ -3,34 +3,72 @@ package ch.njol.skript.lang.function;
 import ch.njol.skript.classes.ClassInfo;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.Contract;
+import com.google.common.base.Preconditions;
 import org.bukkit.event.Event;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * A function that has been implemented in Java, instead of in Skript.
+ * <p>
+ * An example implementation is stated below.
+ * <pre><code>
+ * Functions.register(DefaultFunction.builder("floor", Long.class)
+ * 	.description("Rounds a number down.")
+ * 	.examples("floor(2.34) = 2")
+ * 	.since("3.0")
+ * 	.parameter("n", Number.class)
+ * 	.build(args -> {
+ * 		Object value = args.get("n");
+ *
+ * 		if (value instanceof Long l)
+ * 			return l;
+ *
+ * 		return Math2.floor(((Number) value).doubleValue());
+ * 	}));
+ * </code></pre>
+ * </p>
+ *
+ * @param <T> The return type.
+ * @see #builder(String, Class)
+ */
 public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Function<T> {
 
-	public static <T> Builder<T> builder(String name, Class<T> returnType) {
+	/**
+	 * Creates a new builder for a function.
+	 *
+	 * @param name The name of the function.
+	 * @param returnType The type of the function.
+	 * @return The builder for a function.
+	 * @param <T> The return type.
+	 */
+	public static <T> Builder<T> builder(@NotNull String name, @NotNull Class<T> returnType) {
 		return new Builder<>(name, returnType);
 	}
 
-	private String[] description;
-	private String[] since;
-	private String[] examples;
-
 	private final Function<FunctionArguments, T> execute;
 
-	public DefaultFunction(
+	private final String[] description;
+	private final String[] since;
+	private final String[] examples;
+
+	private DefaultFunction(
 		String name, Parameter<?>[] parameters,
 		ClassInfo<T> returnType, boolean single,
-		@Nullable Contract contract, Function<FunctionArguments, T> execute
+		@Nullable Contract contract, Function<FunctionArguments, T> execute,
+		String[] description, String[] since, String[] examples
 	) {
 		super(new Signature<>("none", name, parameters, false,
 			returnType, single, Thread.currentThread().getStackTrace()[3].getClassName(), contract));
 
 		this.execute = execute;
+		this.description = description;
+		this.since = since;
+		this.examples = examples;
 	}
 
 	@Override
@@ -48,19 +86,31 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 		return true;
 	}
 
-	public DefaultFunction<T> description(String... description) {
-		this.description = description;
-		return this;
+	/**
+	 * Returns this function's description.
+	 *
+	 * @return The description.
+	 */
+	public String @NotNull [] description() {
+		return description;
 	}
 
-	public DefaultFunction<T> since(String... since) {
-		this.since = since;
-		return this;
+	/**
+	 * Returns this function's version history.
+	 *
+	 * @return The version history.
+	 */
+	public String @NotNull [] since() {
+		return since;
 	}
 
-	public DefaultFunction<T> examples(String... examples) {
-		this.examples = examples;
-		return this;
+	/**
+	 * Returns this function's examples.
+	 *
+	 * @return The examples.
+	 */
+	public String @NotNull [] examples() {
+		return examples;
 	}
 
 	public static class Builder<T> {
@@ -71,17 +121,71 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 
 		private Contract contract = null;
 
-		public Builder(String name, Class<T> returnType) {
+		private String[] description;
+		private String[] since;
+		private String[] examples;
+
+		private Builder(@NotNull String name, @NotNull Class<T> returnType) {
+			Preconditions.checkNotNull(name, "name cannot be null");
+			Preconditions.checkNotNull(returnType, "return type cannot be null");
+
 			this.name = name;
 			this.returnType = returnType;
 		}
 
-		public Builder<T> contract(Contract contract) {
+		public Builder<T> contract(@NotNull Contract contract) {
+			Preconditions.checkNotNull(contract, "contract cannot be null");
+
 			this.contract = contract;
 			return this;
 		}
 
-		public <PT> Builder<T> parameter(String name, Class<PT> type) {
+		/**
+		 * Sets this function builder's description.
+		 *
+		 * @return This builder.
+		 */
+		public Builder<T> description(@NotNull String... description) {
+			Preconditions.checkNotNull(description, "description cannot be null");
+
+			this.description = description;
+			return this;
+		}
+
+		/**
+		 * Sets this function builder's version history.
+		 *
+		 * @return This builder.
+		 */
+		public Builder<T> since(@NotNull String... since) {
+			Preconditions.checkNotNull(since, "since cannot be null");
+
+			this.since = since;
+			return this;
+		}
+
+		/**
+		 * Sets this function builder's examples.
+		 *
+		 * @return This builder.
+		 */
+		public Builder<T> examples(@NotNull String... examples) {
+			Preconditions.checkNotNull(examples, "examples cannot be null");
+
+			this.examples = examples;
+			return this;
+		}
+		/**
+		 * Adds a parameter to this function builder.
+		 *
+		 * @param name The parameter name.
+		 * @param type The type of the parameter.
+		 * @return This builder.
+		 */
+		public <PT> Builder<T> parameter(@NotNull String name, @NotNull Class<PT> type) {
+			Preconditions.checkNotNull(name, "name cannot be null");
+			Preconditions.checkNotNull(type, "type cannot be null");
+
 			ClassInfo<PT> classInfo = Classes.getExactClassInfo(type);
 			if (classInfo == null) {
 				throw new IllegalArgumentException("No ClassInfo found for " + type.getSimpleName());
@@ -90,7 +194,14 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 			return this;
 		}
 
+		/**
+		 * Completes this builder with the code to execute on call of this function.
+		 *
+		 * @param execute The code to execute.
+		 * @return The final function.
+		 */
 		public DefaultFunction<T> build(Function<FunctionArguments, T> execute) {
+			Preconditions.checkNotNull(execute, "execute cannot be null");
 			ClassInfo<T> classInfo = Classes.getExactClassInfo(returnType);
 
 			if (classInfo == null) {
@@ -98,7 +209,7 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 			}
 
 			return new DefaultFunction<>(name, parameters.values().toArray(new Parameter[0]), classInfo,
-				!returnType.isArray(), contract, execute);
+				!returnType.isArray(), contract, execute, description, since, examples);
 		}
 	}
 

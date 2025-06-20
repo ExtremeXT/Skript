@@ -1,6 +1,7 @@
 package org.skriptlang.skript.lang.function;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.lang.Debuggable;
 import ch.njol.skript.lang.Expression;
 import ch.njol.skript.lang.function.*;
 import ch.njol.skript.util.LiteralUtils;
@@ -8,8 +9,9 @@ import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
+import java.util.StringJoiner;
 
-public final class FunctionReference<T> {
+public final class FunctionReference<T> implements Debuggable {
 
 	private final String namespace;
 	private final String name;
@@ -107,6 +109,23 @@ public final class FunctionReference<T> {
 
 	public Argument<Expression<?>>[] arguments() {
 		return arguments;
+	}
+
+	@Override
+	public String toString(@Nullable Event event, boolean debug) {
+		StringBuilder builder = new StringBuilder();
+
+		builder.append(name);
+		builder.append("(");
+
+		StringJoiner args = new StringJoiner(", ");
+		for (Argument<Expression<?>> argument : arguments) {
+			args.add("%s: %s".formatted(argument.name, argument.value.toString(event, debug)));
+		}
+
+		builder.append(args);
+		builder.append(")");
+		return builder.toString();
 	}
 
 	/**
