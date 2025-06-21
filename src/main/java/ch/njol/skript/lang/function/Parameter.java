@@ -44,6 +44,8 @@ public final class Parameter<T> {
 	 * when the function is called.
 	 */
 	final @Nullable Expression<? extends T> def;
+
+	final boolean optional;
 	
 	/**
 	 * Whether this parameter takes one or many values.
@@ -56,6 +58,15 @@ public final class Parameter<T> {
 		this.type = type;
 		this.def = def;
 		this.single = single;
+		this.optional = def != null;
+	}
+
+	public Parameter(String name, ClassInfo<T> type, boolean single, boolean optional) {
+		this.name = name;
+		this.type = type;
+		this.def = null;
+		this.single = single;
+		this.optional = optional;
 	}
 	
 	/**

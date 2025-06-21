@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -29,7 +30,7 @@ import java.util.function.Function;
  * 			return l;
  *
  * 		return Math2.floor(((Number) value).doubleValue());
- * 	}));
+ *    }));
  * </code></pre>
  * </p>
  *
@@ -41,16 +42,17 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 	/**
 	 * Creates a new builder for a function.
 	 *
-	 * @param name The name of the function.
+	 * @param name       The name of the function.
 	 * @param returnType The type of the function.
+	 * @param <T>        The return type.
 	 * @return The builder for a function.
-	 * @param <T> The return type.
 	 */
 	public static <T> Builder<T> builder(@NotNull String name, @NotNull Class<T> returnType) {
 		return new Builder<>(name, returnType);
 	}
 
 	private final Function<FunctionArguments, T> execute;
+	private final BiFunction<Event, FunctionArguments, T> execute2;
 
 	private final String[] description;
 	private final String[] since;
@@ -66,6 +68,23 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 			returnType, single, Thread.currentThread().getStackTrace()[3].getClassName(), contract));
 
 		this.execute = execute;
+		this.execute2 = null;
+		this.description = description;
+		this.since = since;
+		this.examples = examples;
+	}
+
+	private DefaultFunction(
+		String name, Parameter<?>[] parameters,
+		ClassInfo<T> returnType, boolean single,
+		@Nullable Contract contract, BiFunction<Event, FunctionArguments, T> execute2,
+		String[] description, String[] since, String[] examples
+	) {
+		super(new Signature<>("none", name, parameters, false,
+			returnType, single, Thread.currentThread().getStackTrace()[3].getClassName(), contract));
+
+		this.execute = null;
+		this.execute2 = execute2;
 		this.description = description;
 		this.since = since;
 		this.examples = examples;
@@ -78,6 +97,10 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 
 	@Override
 	public @Nullable T execute(Event event, FunctionArguments arguments) {
+		if (execute == null) {
+			return execute2.apply(event, arguments);
+		}
+
 		return execute.apply(arguments);
 	}
 
@@ -175,6 +198,7 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 			this.examples = examples;
 			return this;
 		}
+
 		/**
 		 * Adds a parameter to this function builder.
 		 *
@@ -188,9 +212,21 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 
 			ClassInfo<PT> classInfo = Classes.getExactClassInfo(type);
 			if (classInfo == null) {
-				throw new IllegalArgumentException("No ClassInfo found for " + type.getSimpleName());
+				throw new IllegalArgumentException("No type found for " + type.getSimpleName());
 			}
-			parameters.put(name, new Parameter<>(name, classInfo, true, null));
+			parameters.put(name, new Parameter<>(name, classInfo, !type.isArray(), null));
+			return this;
+		}
+
+		public <PT> Builder<T> optionalParameter(@NotNull String name, @NotNull Class<PT> type) {
+			Preconditions.checkNotNull(name, "name cannot be null");
+			Preconditions.checkNotNull(type, "type cannot be null");
+
+			ClassInfo<PT> classInfo = Classes.getExactClassInfo(type);
+			if (classInfo == null) {
+				throw new IllegalArgumentException("No type found for " + type.getSimpleName());
+			}
+			parameters.put(name, new Parameter<>(name, classInfo, !type.isArray(), true));
 			return this;
 		}
 
@@ -205,7 +241,25 @@ public final class DefaultFunction<T> extends ch.njol.skript.lang.function.Funct
 			ClassInfo<T> classInfo = Classes.getExactClassInfo(returnType);
 
 			if (classInfo == null) {
-				throw new IllegalArgumentException("No ClassInfo found for " + returnType.getSimpleName());
+				throw new IllegalArgumentException("No type found for " + returnType.getSimpleName());
+			}
+
+			return new DefaultFunction<>(name, parameters.values().toArray(new Parameter[0]), classInfo,
+				!returnType.isArray(), contract, execute, description, since, examples);
+		}
+
+		/**
+		 * Completes this builder with the code to execute on call of this function.
+		 *
+		 * @param execute The code to execute.
+		 * @return The final function.
+		 */
+		public DefaultFunction<T> build(BiFunction<Event, FunctionArguments, T> execute) {
+			Preconditions.checkNotNull(execute, "execute cannot be null");
+			ClassInfo<T> classInfo = Classes.getExactClassInfo(returnType);
+
+			if (classInfo == null) {
+				throw new IllegalArgumentException("No type found for " + returnType.getSimpleName());
 			}
 
 			return new DefaultFunction<>(name, parameters.values().toArray(new Parameter[0]), classInfo,

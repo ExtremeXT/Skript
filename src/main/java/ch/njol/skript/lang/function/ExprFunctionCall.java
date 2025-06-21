@@ -19,7 +19,7 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 	@SuppressWarnings("unchecked")
 	public ExprFunctionCall(org.skriptlang.skript.lang.function.FunctionReference<?> function, Class<? extends T>[] expectedReturnTypes) {
 		this.function = function;
-		Class<?> functionReturnType = function.function().getReturnType().getC();
+		Class<?> functionReturnType = function.signature().getReturnType().getC();
 		assert  functionReturnType != null;
 		if (CollectionUtils.containsSuperclass(expectedReturnTypes, functionReturnType)) {
 			// Function returns expected type already
@@ -36,7 +36,12 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 	protected T @Nullable [] get(Event event) {
 		Object returnValue = function.execute(event);
 		function.function().resetReturnValue();
-		return Converters.convert(new Object[] { returnValue }, returnTypes, returnType);
+
+		if (isSingle()) {
+			return Converters.convert(new Object[] { returnValue }, returnTypes, returnType);
+		} else {
+			return Converters.convert((Object[]) returnValue, returnTypes, returnType);
+		}
 	}
 
 	@Override
@@ -44,8 +49,8 @@ public class ExprFunctionCall<T> extends SimpleExpression<T> {
 	public <R> @Nullable Expression<? extends R> getConvertedExpression(Class<R>... to) {
 		if (CollectionUtils.containsSuperclass(to, getReturnType()))
 			return (Expression<? extends R>) this;
-		assert function.function().getReturnType() != null;
-		if (Converters.converterExists(function.function().getReturnType().getC(), to)) {
+		assert function.signature().getReturnType() != null;
+		if (Converters.converterExists(function.signature().getReturnType().getC(), to)) {
 			return new ExprFunctionCall<>(function, to);
 		}
 		return null;

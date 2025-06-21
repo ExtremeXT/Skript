@@ -7,8 +7,8 @@ import ch.njol.skript.lang.function.*;
 import ch.njol.skript.lang.util.SimpleLiteral;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.DefaultClasses;
-import ch.njol.skript.util.Date;
 import ch.njol.skript.util.*;
+import ch.njol.skript.util.Date;
 import ch.njol.util.Math2;
 import ch.njol.util.StringUtils;
 import ch.njol.util.coll.CollectionUtils;
@@ -353,7 +353,49 @@ public class DefaultFunctions {
 			.examples("set {_nether} to world(\"%{_world}%_nether\")")
 			.since("2.2");
 
-		Functions.registerFunction(new JavaFunction<Location>("location", new Parameter[] {
+		Functions.register(DefaultFunction.builder("location", Location.class)
+			.description(
+				"Creates a location from a world and 3 coordinates, with an optional yaw and pitch.",
+				"If for whatever reason the world is not found, it will fallback to the server's main world.")
+			.examples(
+				"# TELEPORTING",
+				"teleport player to location(1,1,1, world \"world\")",
+				"teleport player to location(1,1,1, world \"world\", 100, 0)",
+				"teleport player to location(1,1,1, world \"world\", yaw of player, pitch of player)",
+				"teleport player to location(1,1,1, world of player)",
+				"teleport player to location(1,1,1, world(\"world\"))",
+				"teleport player to location({_x}, {_y}, {_z}, {_w}, {_yaw}, {_pitch})",
+				"# SETTING BLOCKS",
+				"set block at location(1,1,1, world \"world\") to stone",
+				"set block at location(1,1,1, world \"world\", 100, 0) to stone",
+				"set block at location(1,1,1, world of player) to stone",
+				"set block at location(1,1,1, world(\"world\")) to stone",
+				"set block at location({_x}, {_y}, {_z}, {_w}) to stone",
+				"# USING VARIABLES",
+				"set {_l1} to location(1,1,1)",
+				"set {_l2} to location(10,10,10)",
+				"set blocks within {_l1} and {_l2} to stone",
+				"if player is within {_l1} and {_l2}:",
+				"# OTHER",
+				"kill all entities in radius 50 around location(1,65,1, world \"world\")",
+				"delete all entities in radius 25 around location(50,50,50, world \"world_nether\")",
+				"ignite all entities in radius 25 around location(1,1,1, world of player)")
+			.since("2.2")
+			.parameter("x", Number.class)
+			.parameter("y", Number.class)
+			.parameter("z", Number.class)
+			.optionalParameter("world", World.class)
+			.optionalParameter("yaw", Float.class)
+			.optionalParameter("pitch", Float.class)
+			.build((event, args) -> {
+				World world = args.getOrDefault("world", new EventValueExpression<>(World.class).getSingle(event));
+
+				return new Location(world == null ? Bukkit.getWorlds().get(0) : world,
+					args.<Number>get("x").doubleValue(), args.<Number>get("y").doubleValue(), args.<Number>get("z").doubleValue(),
+					args.getOrDefault("yaw", 0f), args.getOrDefault("pitch", 0f));
+			}));
+
+		Functions.registerFunction(new JavaFunction<Location>("location2", new Parameter[] {
 			new Parameter<>("x", DefaultClasses.NUMBER, true, null),
 			new Parameter<>("y", DefaultClasses.NUMBER, true, null),
 			new Parameter<>("z", DefaultClasses.NUMBER, true, null),
@@ -376,29 +418,29 @@ public class DefaultFunctions {
 					((Number) params[4][0]).floatValue(), ((Number) params[5][0]).floatValue())};
 			}
 		}.description("Creates a location from a world and 3 coordinates, with an optional yaw and pitch.",
-						"If for whatever reason the world is not found, it will fallback to the server's main world.")
+				"If for whatever reason the world is not found, it will fallback to the server's main world.")
 			.examples("# TELEPORTING",
-					"teleport player to location(1,1,1, world \"world\")",
-					"teleport player to location(1,1,1, world \"world\", 100, 0)",
-					"teleport player to location(1,1,1, world \"world\", yaw of player, pitch of player)",
-					"teleport player to location(1,1,1, world of player)",
-					"teleport player to location(1,1,1, world(\"world\"))",
-					"teleport player to location({_x}, {_y}, {_z}, {_w}, {_yaw}, {_pitch})",
-					"# SETTING BLOCKS",
-					"set block at location(1,1,1, world \"world\") to stone",
-					"set block at location(1,1,1, world \"world\", 100, 0) to stone",
-					"set block at location(1,1,1, world of player) to stone",
-					"set block at location(1,1,1, world(\"world\")) to stone",
-					"set block at location({_x}, {_y}, {_z}, {_w}) to stone",
-					"# USING VARIABLES",
-					"set {_l1} to location(1,1,1)",
-					"set {_l2} to location(10,10,10)",
-					"set blocks within {_l1} and {_l2} to stone",
-					"if player is within {_l1} and {_l2}:",
-					"# OTHER",
-					"kill all entities in radius 50 around location(1,65,1, world \"world\")",
-					"delete all entities in radius 25 around location(50,50,50, world \"world_nether\")",
-					"ignite all entities in radius 25 around location(1,1,1, world of player)")
+				"teleport player to location(1,1,1, world \"world\")",
+				"teleport player to location(1,1,1, world \"world\", 100, 0)",
+				"teleport player to location(1,1,1, world \"world\", yaw of player, pitch of player)",
+				"teleport player to location(1,1,1, world of player)",
+				"teleport player to location(1,1,1, world(\"world\"))",
+				"teleport player to location({_x}, {_y}, {_z}, {_w}, {_yaw}, {_pitch})",
+				"# SETTING BLOCKS",
+				"set block at location(1,1,1, world \"world\") to stone",
+				"set block at location(1,1,1, world \"world\", 100, 0) to stone",
+				"set block at location(1,1,1, world of player) to stone",
+				"set block at location(1,1,1, world(\"world\")) to stone",
+				"set block at location({_x}, {_y}, {_z}, {_w}) to stone",
+				"# USING VARIABLES",
+				"set {_l1} to location(1,1,1)",
+				"set {_l2} to location(10,10,10)",
+				"set blocks within {_l1} and {_l2} to stone",
+				"if player is within {_l1} and {_l2}:",
+				"# OTHER",
+				"kill all entities in radius 50 around location(1,65,1, world \"world\")",
+				"delete all entities in radius 25 around location(50,50,50, world \"world_nether\")",
+				"ignite all entities in radius 25 around location(1,1,1, world of player)")
 			.since("2.2"));
 
 		Functions.registerFunction(new SimpleJavaFunction<Date>("date", new Parameter[] {

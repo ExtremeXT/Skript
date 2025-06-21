@@ -17,8 +17,13 @@ public final class FunctionReference<T> implements Debuggable {
 	private final String name;
 	private final Argument<Expression<?>>[] arguments;
 
-	private Function<? extends T> cachedFunction;
-	private LinkedHashMap<String, Expression<?>> cachedArguments;
+	private Function<T> cachedFunction;
+	private Signature<T> cachedSignature;
+	private LinkedHashMap<String, ArgInfo> cachedArguments;
+
+	private record ArgInfo(Expression<?> expression, Class<?> type, boolean single) {
+
+	}
 
 	public FunctionReference(String namespace, String name, Argument<Expression<?>>[] arguments) {
 		this.namespace = namespace;
@@ -27,22 +32,22 @@ public final class FunctionReference<T> implements Debuggable {
 	}
 
 	public boolean validate() {
-		if (cachedFunction == null) {
+		if (cachedSignature == null) {
 			//noinspection unchecked
-			cachedFunction = (Function<? extends T>) Functions.getFunction(name, namespace);
-
-			if (cachedFunction == null) {
-				Skript.error("Function '%s' not found.".formatted(name));
-				return false;
-			}
+			cachedSignature = (Signature<T>) Functions.getSignature(name, namespace);
 		}
 
-		if (cachedArguments == null) {
+		if (cachedFunction == null) {
+			//noinspection unchecked
+			cachedFunction = (Function<T>) Functions.getFunction(name, namespace);
+		}
+
+		if (cachedArguments == null && cachedSignature != null) {
 			cachedArguments = new LinkedHashMap<>();
 
 			// get the target params of the function
 			LinkedHashMap<String, Parameter<?>> targetParameters = new LinkedHashMap<>();
-			for (Parameter<?> parameter : cachedFunction.getParameters()) {
+			for (Parameter<?> parameter : cachedSignature.getParameters()) {
 				targetParameters.put(parameter.getName(), parameter);
 			}
 
@@ -70,7 +75,7 @@ public final class FunctionReference<T> implements Debuggable {
 				}
 
 				// all good
-				cachedArguments.put(target.getName(), converted);
+				cachedArguments.put(target.getName(), new ArgInfo(converted, target.getType().getC(), target.isSingleValue()));
 				targetParameters.remove(target.getName());
 			}
 		}
@@ -85,18 +90,34 @@ public final class FunctionReference<T> implements Debuggable {
 		}
 
 		LinkedHashMap<String, Object> args = new LinkedHashMap<>();
-		cachedArguments.forEach((k, v) -> args.put(k, v.getSingle(event)));
+		cachedArguments.forEach((k, v) -> {
+			if (v.single) {
+				args.put(k, v.expression.getSingle(event));
+			} else {
+				args.put(k, v.expression.getArray(event));
+			}
+		});
 
-		return cachedFunction.execute(new FunctionEvent<>(cachedFunction), new FunctionArguments(args));
+		Function<? extends T> function = function();
+		return function.execute(new FunctionEvent<>(function), new FunctionArguments(args));
 	}
 
-	public Function<? extends T> function() {
+	public Function<T> function() {
 		if (cachedFunction == null) {
 			//noinspection unchecked
-			cachedFunction = (Function<? extends T>) Functions.getFunction(name, namespace);
+			cachedFunction = (Function<T>) Functions.getFunction(name, namespace);
 		}
 
 		return cachedFunction;
+	}
+
+	public Signature<T> signature() {
+		if (cachedFunction == null) {
+			//noinspection unchecked
+			cachedSignature = (Signature<T>) Functions.getSignature(name, namespace);
+		}
+
+		return cachedSignature;
 	}
 
 	public String namespace() {
